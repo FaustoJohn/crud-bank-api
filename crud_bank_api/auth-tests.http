@@ -1,0 +1,75 @@
+### Authentication API Tests
+
+# Base URL
+@baseUrl = https://localhost:5001/api
+
+### Register a new user
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Test",
+  "lastName": "User",
+  "email": "test.user@example.com",
+  "password": "password123",
+  "phoneNumber": "+1234567890"
+}
+
+### Login with existing user (John Doe)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "john.doe@example.com",
+  "password": "password123"
+}
+
+### Login with new user
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "test.user@example.com",
+  "password": "password123"
+}
+
+### Get current user (requires authentication)
+# First login and copy the token, then replace YOUR_JWT_TOKEN_HERE
+GET {{baseUrl}}/auth/me
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+### Change password (requires authentication)
+POST {{baseUrl}}/auth/change-password
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+{
+  "currentPassword": "password123",
+  "newPassword": "newpassword123"
+}
+
+### Logout (requires authentication)
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+### Get all users (requires authentication)
+GET {{baseUrl}}/users
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+### Get user by ID (requires authentication)
+GET {{baseUrl}}/users/1
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+### Create new user (requires authentication - admin functionality)
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+{
+  "firstName": "Admin",
+  "lastName": "Created",
+  "email": "admin.created@example.com",
+  "password": "password123",
+  "phoneNumber": "+1987654321",
+  "initialBalance": 500.00
+}

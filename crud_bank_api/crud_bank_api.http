@@ -1,0 +1,53 @@
+@crud_bank_api_HostAddress = http://localhost:5134
+
+# User Operations
+
+### Get all users
+GET {{crud_bank_api_HostAddress}}/api/users
+Accept: application/json
+
+### Get user by ID
+GET {{crud_bank_api_HostAddress}}/api/users/1
+Accept: application/json
+
+### Get user by email
+GET {{crud_bank_api_HostAddress}}/api/users/by-email?email=john.doe@example.com
+Accept: application/json
+
+### Create a new user
+POST {{crud_bank_api_HostAddress}}/api/users
+Content-Type: application/json
+
+{
+  "firstName": "Alice",
+  "lastName": "Johnson",
+  "email": "alice.johnson@example.com",
+  "phoneNumber": "+1555123456",
+  "initialBalance": 500.00
+}
+
+### Update a user
+PUT {{crud_bank_api_HostAddress}}/api/users/1
+Content-Type: application/json
+
+{
+  "firstName": "John Updated",
+  "phoneNumber": "+1999888777"
+}
+
+### Check if user exists
+HEAD {{crud_bank_api_HostAddress}}/api/users/1
+
+### Delete a user (soft delete)
+DELETE {{crud_bank_api_HostAddress}}/api/users/1
+
+### Old Todo endpoints (for reference)
+GET {{crud_bank_api_HostAddress}}/todos/
+Accept: application/json
+
+###
+
+GET {{crud_bank_api_HostAddress}}/todos/1
+Accept: application/json
+
+###
