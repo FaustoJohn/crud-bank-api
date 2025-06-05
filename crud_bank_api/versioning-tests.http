@@ -1,0 +1,74 @@
+### API Versioning Tests for CRUD Bank API
+
+### 1. Test V1 Auth - Register (default version)
+POST http://localhost:5134/v1.0/auth/register
+Content-Type: application/json
+
+{
+  "email": "testuser@example.com",
+  "password": "TestPassword123!",
+  "firstName": "Test",
+  "lastName": "User"
+}
+
+### 2. Test V2 Auth - Register (explicit version)
+POST http://localhost:5134/v2.0/auth/register
+Content-Type: application/json
+
+{
+  "email": "testuser2@example.com",
+  "password": "TestPassword123!",
+  "firstName": "Test",
+  "lastName": "User V2"
+}
+
+### 3. Test V1 Auth - Login
+POST http://localhost:5134/v1.0/auth/login
+Content-Type: application/json
+
+{
+  "email": "testuser@example.com",
+  "password": "TestPassword123!"
+}
+
+### 4. Test V2 Auth - Enhanced Login (V2 only feature)
+POST http://localhost:5134/v2.0/auth/login/enhanced
+Content-Type: application/json
+
+{
+  "email": "testuser2@example.com",
+  "password": "TestPassword123!"
+}
+
+### 5. Test V1 Users - Get All Users (replace YOUR_JWT_TOKEN with actual token)
+GET http://localhost:5134/v1.0/users
+Authorization: Bearer YOUR_JWT_TOKEN
+
+### 6. Test V2 Users - Get Paginated Users (V2 only feature)
+GET http://localhost:5134/v2.0/users/paginated?page=1&pageSize=5
+Authorization: Bearer YOUR_JWT_TOKEN
+
+### 7. Test V2 Users - Get User Summary (V2 only feature, replace ID with actual user ID)
+GET http://localhost:5134/v2.0/users/1/summary
+Authorization: Bearer YOUR_JWT_TOKEN
+
+### 8. Test V2 Auth - Get Auth Status (V2 only feature)
+GET http://localhost:5134/v2.0/auth/status
+Authorization: Bearer YOUR_JWT_TOKEN
+
+### 9. Test API Versioning via Query Parameter
+GET http://localhost:5134/v1.0/users?version=2.0
+Authorization: Bearer YOUR_JWT_TOKEN
+
+### 10. Test API Versioning via Header
+GET http://localhost:5134/v1.0/users
+Authorization: Bearer YOUR_JWT_TOKEN
+X-Version: 2.0
+
+### 11. Test default version (should use v1.0)
+GET http://localhost:5134/v1.0/users
+Authorization: Bearer YOUR_JWT_TOKEN
+
+### 12. Test invalid version (should return error)
+GET http://localhost:5134/v3.0/users
+Authorization: Bearer YOUR_JWT_TOKEN

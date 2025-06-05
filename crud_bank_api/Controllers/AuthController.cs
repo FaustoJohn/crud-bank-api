@@ -7,7 +7,9 @@ using System.Security.Claims;
 namespace crud_bank_api.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [ApiVersion("2.0")]
+    [Route("v{version:apiVersion}/[controller]")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
@@ -124,6 +126,73 @@ namespace crud_bank_api.Controllers
             // JWT tokens are stateless, so logout is typically handled client-side
             // by removing the token from storage
             return Ok(new { message = "Logged out successfully. Please remove the token from client storage." });
+        }
+
+        /// <summary>
+        /// Get authentication status and token information (V2 only)
+        /// </summary>
+        /// <returns>Authentication status with token details</returns>
+        [HttpGet("status")]
+        [Authorize]
+        [MapToApiVersion("2.0")]
+        public IActionResult GetAuthStatus()
+        {
+            var userId = GetCurrentUserId();
+            var userEmail = User.FindFirst(ClaimTypes.Email)?.Value;
+            var tokenExp = User.FindFirst(ClaimTypes.Expiration)?.Value;
+            
+            var status = new
+            {
+                IsAuthenticated = true,
+                UserId = userId,
+                Email = userEmail,
+                TokenExpiration = tokenExp,
+                ApiVersion = "2.0",
+                AuthenticationMethod = "JWT Bearer",
+                Claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList()
+            };
+
+            return Ok(status);
+        }
+
+        /// <summary>
+        /// Enhanced login with additional security features (V2 only)
+        /// </summary>
+        /// <param name="loginDto">Login credentials</param>
+        /// <returns>Enhanced JWT token response with security metadata</returns>
+        [HttpPost("login/enhanced")]
+        [MapToApiVersion("2.0")]
+        public async Task<ActionResult<object>> EnhancedLogin([FromBody] LoginDto loginDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var result = await _authService.LoginAsync(loginDto);
+            if (result == null)
+            {
+                return Unauthorized("Invalid email or password.");
+            }
+
+            // Enhanced response with additional security metadata
+            var enhancedResult = new
+            {
+                Token = result.Token,
+                User = result.User,
+                SecurityInfo = new
+                {
+                    LoginTime = DateTime.UtcNow,
+                    ExpiresAt = DateTime.UtcNow.AddHours(1), // Assuming 1 hour expiration
+                    TokenType = "Bearer",
+                    ApiVersion = "2.0",
+                    SecurityLevel = "Standard",
+                    RequiresMFA = false, // Future enhancement
+                    LastLoginAttempt = DateTime.UtcNow
+                }
+            };
+
+            return Ok(enhancedResult);
         }
 
         private int? GetCurrentUserId()

@@ -7,7 +7,9 @@ using System.ComponentModel.DataAnnotations;
 namespace crud_bank_api.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [ApiVersion("2.0")]
+    [Route("v{version:apiVersion}/[controller]")]
     [Authorize] // Require authentication for all endpoints
     public class UsersController : ControllerBase
     {
@@ -162,6 +164,75 @@ namespace crud_bank_api.Controllers
         {
             var exists = await _userService.UserExistsAsync(id);
             return exists ? Ok() : NotFound();
+        }
+
+        /// <summary>
+        /// Get user summary with additional metadata (V2 only)
+        /// </summary>
+        /// <param name="id">User ID</param>
+        /// <returns>User summary with metadata</returns>
+        [HttpGet("{id}/summary")]
+        [MapToApiVersion("2.0")]
+        public async Task<ActionResult<object>> GetUserSummary(int id)
+        {
+            var user = await _userService.GetUserByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound($"User with ID {id} not found.");
+            }
+
+            var summary = new
+            {
+                User = user,
+                Metadata = new
+                {
+                    AccountAge = DateTime.UtcNow - user.CreatedAt,
+                    ApiVersion = "2.0",
+                    LastAccessed = DateTime.UtcNow,
+                    Features = new[] { "Enhanced User Data", "Metadata Support", "Account Analytics" }
+                }
+            };
+
+            return Ok(summary);
+        }
+
+        /// <summary>
+        /// Get users with pagination (V2 enhancement)
+        /// </summary>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Page size (default: 10, max: 100)</param>
+        /// <returns>Paginated list of users</returns>
+        [HttpGet("paginated")]
+        [MapToApiVersion("2.0")]
+        public async Task<ActionResult<object>> GetUsersPaginated([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            if (page < 1) page = 1;
+            if (pageSize < 1 || pageSize > 100) pageSize = 10;
+
+            var allUsers = await _userService.GetAllUsersAsync();
+            var totalUsers = allUsers.Count();
+            var totalPages = (int)Math.Ceiling(totalUsers / (double)pageSize);
+            
+            var pagedUsers = allUsers
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize);
+
+            var result = new
+            {
+                Data = pagedUsers,
+                Pagination = new
+                {
+                    CurrentPage = page,
+                    PageSize = pageSize,
+                    TotalPages = totalPages,
+                    TotalUsers = totalUsers,
+                    HasNextPage = page < totalPages,
+                    HasPreviousPage = page > 1
+                },
+                ApiVersion = "2.0"
+            };
+
+            return Ok(result);
         }
     }
 }

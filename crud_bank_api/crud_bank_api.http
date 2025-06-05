@@ -3,19 +3,19 @@
 # User Operations
 
 ### Get all users
-GET {{crud_bank_api_HostAddress}}/api/users
+GET {{crud_bank_api_HostAddress}}/v1.0/users
 Accept: application/json
 
 ### Get user by ID
-GET {{crud_bank_api_HostAddress}}/api/users/1
+GET {{crud_bank_api_HostAddress}}/v1.0/users/1
 Accept: application/json
 
 ### Get user by email
-GET {{crud_bank_api_HostAddress}}/api/users/by-email?email=john.doe@example.com
+GET {{crud_bank_api_HostAddress}}/v1.0/users/by-email?email=john.doe@example.com
 Accept: application/json
 
 ### Create a new user
-POST {{crud_bank_api_HostAddress}}/api/users
+POST {{crud_bank_api_HostAddress}}/v1.0/users
 Content-Type: application/json
 
 {
@@ -27,7 +27,7 @@ Content-Type: application/json
 }
 
 ### Update a user
-PUT {{crud_bank_api_HostAddress}}/api/users/1
+PUT {{crud_bank_api_HostAddress}}/v1.0/users/1
 Content-Type: application/json
 
 {
@@ -36,10 +36,10 @@ Content-Type: application/json
 }
 
 ### Check if user exists
-HEAD {{crud_bank_api_HostAddress}}/api/users/1
+HEAD {{crud_bank_api_HostAddress}}/v1.0/users/1
 
 ### Delete a user (soft delete)
-DELETE {{crud_bank_api_HostAddress}}/api/users/1
+DELETE {{crud_bank_api_HostAddress}}/v1.0/users/1
 
 ### Old Todo endpoints (for reference)
 GET {{crud_bank_api_HostAddress}}/todos/

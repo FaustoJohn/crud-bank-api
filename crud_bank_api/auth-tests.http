@@ -1,10 +1,10 @@
 ### Authentication API Tests
 
 # Base URL
-@baseUrl = https://localhost:5001/api
+@baseUrl = https://localhost:5001
 
 ### Register a new user
-POST {{baseUrl}}/auth/register
+POST {{baseUrl}}/v1.0/auth/register
 Content-Type: application/json
 
 {
@@ -16,7 +16,7 @@ Content-Type: application/json
 }
 
 ### Login with existing user (John Doe)
-POST {{baseUrl}}/auth/login
+POST {{baseUrl}}/v1.0/auth/login
 Content-Type: application/json
 
 {
@@ -25,7 +25,7 @@ Content-Type: application/json
 }
 
 ### Login with new user
-POST {{baseUrl}}/auth/login
+POST {{baseUrl}}/v1.0/auth/login
 Content-Type: application/json
 
 {
@@ -35,11 +35,11 @@ Content-Type: application/json
 
 ### Get current user (requires authentication)
 # First login and copy the token, then replace YOUR_JWT_TOKEN_HERE
-GET {{baseUrl}}/auth/me
+GET {{baseUrl}}/v1.0/auth/me
 Authorization: Bearer YOUR_JWT_TOKEN_HERE
 
 ### Change password (requires authentication)
-POST {{baseUrl}}/auth/change-password
+POST {{baseUrl}}/v1.0/auth/change-password
 Content-Type: application/json
 Authorization: Bearer YOUR_JWT_TOKEN_HERE
 
@@ -49,19 +49,19 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 }
 
 ### Logout (requires authentication)
-POST {{baseUrl}}/auth/logout
+POST {{baseUrl}}/v1.0/auth/logout
 Authorization: Bearer YOUR_JWT_TOKEN_HERE
 
 ### Get all users (requires authentication)
-GET {{baseUrl}}/users
+GET {{baseUrl}}/v1.0/users
 Authorization: Bearer YOUR_JWT_TOKEN_HERE
 
 ### Get user by ID (requires authentication)
-GET {{baseUrl}}/users/1
+GET {{baseUrl}}/v1.0/users/1
 Authorization: Bearer YOUR_JWT_TOKEN_HERE
 
 ### Create new user (requires authentication - admin functionality)
-POST {{baseUrl}}/users
+POST {{baseUrl}}/v1.0/users
 Content-Type: application/json
 Authorization: Bearer YOUR_JWT_TOKEN_HERE
 
