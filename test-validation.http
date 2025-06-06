@@ -1,0 +1,62 @@
+### Test 1: Valid user creation
+POST http://localhost:5134/api/v1/users
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "phoneNumber": "+1-555-123-4567",
+  "address": "123 Main St, Anytown, USA"
+}
+
+### Test 2: Invalid data - empty name
+POST http://localhost:5134/api/v1/users
+Content-Type: application/json
+
+{
+  "name": "",
+  "email": "john.doe@example.com",
+  "phoneNumber": "+1-555-123-4567",
+  "address": "123 Main St, Anytown, USA"
+}
+
+### Test 3: Invalid data - invalid email
+POST http://localhost:5134/api/v1/users
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "invalid-email",
+  "phoneNumber": "+1-555-123-4567",
+  "address": "123 Main St, Anytown, USA"
+}
+
+### Test 4: Invalid data - invalid phone number
+POST http://localhost:5134/api/v1/users
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "phoneNumber": "123",
+  "address": "123 Main St, Anytown, USA"
+}
+
+### Test 5: Invalid data - multiple validation errors
+POST http://localhost:5134/api/v1/users
+Content-Type: application/json
+
+{
+  "name": "",
+  "email": "invalid-email",
+  "phoneNumber": "123",
+  "address": ""
+}
+
+### Test 6: Missing required fields
+POST http://localhost:5134/api/v1/users
+Content-Type: application/json
+
+{
+  "name": "John Doe"
+}

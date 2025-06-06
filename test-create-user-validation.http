@@ -1,0 +1,80 @@
+### Test Create User with Valid Data
+POST http://localhost:5000/v1.0/users
+Content-Type: application/json
+Authorization: Bearer your-jwt-token-here
+
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john.doe@example.com",
+  "phoneNumber": "555-123-4567",
+  "password": "password123",
+  "initialBalance": 1000.50
+}
+
+### Test Create User with Missing Required Fields (Should return 400)
+POST http://localhost:5000/v1.0/users
+Content-Type: application/json
+Authorization: Bearer your-jwt-token-here
+
+{
+  "phoneNumber": "555-123-4567",
+  "initialBalance": 1000.50
+}
+
+### Test Create User with Invalid Email (Should return 400)
+POST http://localhost:5000/v1.0/users
+Content-Type: application/json
+Authorization: Bearer your-jwt-token-here
+
+{
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "email": "invalid-email",
+  "phoneNumber": "555-123-4567",
+  "initialBalance": 500.00
+}
+
+### Test Create User with Negative Balance (Should return 400)
+POST http://localhost:5000/v1.0/users
+Content-Type: application/json
+Authorization: Bearer your-jwt-token-here
+
+{
+  "firstName": "Bob",
+  "lastName": "Wilson",
+  "email": "bob.wilson@example.com",
+  "phoneNumber": "555-987-6543",
+  "initialBalance": -100.00
+}
+
+### Test Create User with Invalid Phone Number (Should return 400)
+POST http://localhost:5000/v1.0/users
+Content-Type: application/json
+Authorization: Bearer your-jwt-token-here
+
+{
+  "firstName": "Alice",
+  "lastName": "Johnson",
+  "email": "alice.johnson@example.com",
+  "phoneNumber": "abc-def-ghij",
+  "initialBalance": 250.00
+}
+
+### Test Create User with Null Body (Should return 400)
+POST http://localhost:5000/v1.0/users
+Content-Type: application/json
+Authorization: Bearer your-jwt-token-here
+
+### Test Create User with Empty Strings (Should return 400)
+POST http://localhost:5000/v1.0/users
+Content-Type: application/json
+Authorization: Bearer your-jwt-token-here
+
+{
+  "firstName": "",
+  "lastName": "",
+  "email": "",
+  "phoneNumber": "",
+  "initialBalance": 0
+}

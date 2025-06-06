@@ -78,9 +78,60 @@ namespace crud_bank_api.Controllers
         [HttpPost]
         public async Task<ActionResult<UserResponseDto>> CreateUser([FromBody] CreateUserDto createUserDto)
         {
+            // Check if the request body is null
+            if (createUserDto == null)
+            {
+                return BadRequest("Request body cannot be null.");
+            }
+
+            // Validate model state
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
+            }
+
+            // Additional validation
+            var validationErrors = new List<string>();
+
+            // Validate required fields explicitly
+            if (string.IsNullOrWhiteSpace(createUserDto.FirstName))
+            {
+                validationErrors.Add("FirstName is required and cannot be empty.");
+            }
+
+            if (string.IsNullOrWhiteSpace(createUserDto.LastName))
+            {
+                validationErrors.Add("LastName is required and cannot be empty.");
+            }
+
+            if (string.IsNullOrWhiteSpace(createUserDto.Email))
+            {
+                validationErrors.Add("Email is required and cannot be empty.");
+            }
+            else if (!IsValidEmail(createUserDto.Email))
+            {
+                validationErrors.Add("Email format is invalid.");
+            }
+
+            // Validate initial balance
+            if (createUserDto.InitialBalance < 0)
+            {
+                validationErrors.Add("Initial balance cannot be negative.");
+            }
+
+            // Validate phone number if provided
+            if (!string.IsNullOrWhiteSpace(createUserDto.PhoneNumber) && !IsValidPhoneNumber(createUserDto.PhoneNumber))
+            {
+                validationErrors.Add("Phone number format is invalid.");
+            }
+
+            // Return validation errors if any
+            if (validationErrors.Any())
+            {
+                return BadRequest(new { 
+                    message = "Validation failed",
+                    errors = validationErrors 
+                });
             }
 
             // Check if email already exists
@@ -233,6 +284,38 @@ namespace crud_bank_api.Controllers
             };
 
             return Ok(result);
+        }
+
+        /// <summary>
+        /// Validates email format
+        /// </summary>
+        /// <param name="email">Email to validate</param>
+        /// <returns>True if valid, false otherwise</returns>
+        private static bool IsValidEmail(string email)
+        {
+            try
+            {
+                var addr = new System.Net.Mail.MailAddress(email);
+                return addr.Address == email;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Validates phone number format
+        /// </summary>
+        /// <param name="phoneNumber">Phone number to validate</param>
+        /// <returns>True if valid, false otherwise</returns>
+        private static bool IsValidPhoneNumber(string phoneNumber)
+        {
+            // Remove common phone number formatting characters
+            var cleaned = phoneNumber.Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "").Replace("+", "");
+            
+            // Check if it contains only digits and has reasonable length (7-15 digits)
+            return cleaned.All(char.IsDigit) && cleaned.Length >= 7 && cleaned.Length <= 15;
         }
     }
 }
