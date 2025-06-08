@@ -56,14 +56,32 @@ builder.Services.AddSwaggerGen(c =>
     { 
         Title = "CRUD Bank API", 
         Version = "v1",
-        Description = "A simple bank CRUD API with authentication - Version 1.0"
+        Description = "A simple bank CRUD API with authentication - Version 1.0",
+        Contact = new Microsoft.OpenApi.Models.OpenApiContact
+        {
+            Name = "CRUD Bank API Team",
+            Email = "support@crudbankapi.com"
+        }
     });
     c.SwaggerDoc("v2", new Microsoft.OpenApi.Models.OpenApiInfo 
     { 
         Title = "CRUD Bank API", 
         Version = "v2",
-        Description = "A simple bank CRUD API with authentication - Version 2.0"
+        Description = "A simple bank CRUD API with authentication - Version 2.0 with enhanced features",
+        Contact = new Microsoft.OpenApi.Models.OpenApiContact
+        {
+            Name = "CRUD Bank API Team",
+            Email = "support@crudbankapi.com"
+        }
     });
+
+    // Include XML comments
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        c.IncludeXmlComments(xmlPath);
+    }
 
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {

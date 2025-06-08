@@ -1,0 +1,33 @@
+### Test User Authorization - Login as User 1
+POST http://localhost:5000/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "john.doe@example.com",
+  "password": "password123"
+}
+
+### Test User Authorization - Get Own Details (should work)
+GET http://localhost:5000/v1/users/1
+Authorization: Bearer {{login_token}}
+
+### Test User Authorization - Try to Get Another User's Details (should return 403)
+GET http://localhost:5000/v1/users/2
+Authorization: Bearer {{login_token}}
+
+### Test User Authorization - Login as User 2
+POST http://localhost:5000/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "jane.smith@example.com",
+  "password": "password123"
+}
+
+### Test User Authorization - Get Own Details as User 2 (should work)
+GET http://localhost:5000/v1/users/2
+Authorization: Bearer {{login_token_user2}}
+
+### Test User Authorization - Try to Get User 1's Details as User 2 (should return 403)
+GET http://localhost:5000/v1/users/1
+Authorization: Bearer {{login_token_user2}}
