@@ -1,0 +1,28 @@
+### Test user registration
+POST http://localhost:5134/v1/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Test",
+  "lastName": "User",
+  "email": "test@example.com",
+  "password": "testpassword123",
+  "phoneNumber": "1234567890",
+  "initialBalance": 100.00
+}
+
+### Test login with seeded user
+POST http://localhost:5134/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "john.doe@email.com",
+  "password": "password123"
+}
+
+### Test getting all users (requires auth token from login)
+GET http://localhost:5134/v1/users
+Authorization: Bearer {{token}}
+
+### Test health check
+GET http://localhost:5134/swagger

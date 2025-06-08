@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
 using crud_bank_api.Services;
 using crud_bank_api.Models;
+using crud_bank_api.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +31,10 @@ builder.Services.Configure<JwtSettings>(options =>
 
 // Add services to the container
 builder.Services.AddControllers();
+
+// Add Entity Framework and PostgreSQL
+builder.Services.AddDbContext<BankDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add API versioning
 builder.Services.AddApiVersioning(options =>
@@ -137,6 +143,33 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 
 var app = builder.Build();
+
+// Initialize database
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        logger.LogInformation("Starting database initialization...");
+        var context = services.GetRequiredService<BankDbContext>();
+        
+        // Apply any pending migrations
+        await context.Database.MigrateAsync();
+        logger.LogInformation("Database migrations applied successfully");
+        
+        // Seed the database
+        await DatabaseSeeder.SeedAsync(context);
+        logger.LogInformation("Database seeding completed successfully");
+        
+        logger.LogInformation("Database initialized successfully");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "An error occurred while initializing the database");
+        throw; // Re-throw to prevent application from starting with database issues
+    }
+}
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())

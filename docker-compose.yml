@@ -1,0 +1,20 @@
+services:
+  bank_db:
+    image: postgres:latest
+    container_name: bank_db
+    environment:
+      POSTGRES_USER: bank_user
+      POSTGRES_PASSWORD: bank_password
+      POSTGRES_DB: bank_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - bank_db_data:/var/lib/postgresql/data
+
+volumes:
+  bank_db_data:
+    driver: local
+
+networks:
+  default:
+    driver: bridge
