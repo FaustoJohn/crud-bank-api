@@ -83,53 +83,6 @@ namespace crud_bank_api.Controllers
 
             return Ok(result);
         }        /// <summary>
-        /// Registers a new user account in the system
-        /// </summary>
-        /// <remarks>
-        /// This endpoint creates a new user account with the provided registration information.
-        /// The email must be unique and all required fields must be provided.
-        /// Upon successful registration, the user is automatically logged in and receives a JWT token.
-        /// 
-        /// Sample request:
-        /// 
-        ///     POST /v1/auth/register
-        ///     Content-Type: application/json
-        ///     
-        ///     {
-        ///         "firstName": "John",
-        ///         "lastName": "Doe",
-        ///         "email": "john.doe@example.com",
-        ///         "password": "SecurePassword123!",
-        ///         "phoneNumber": "+1234567890"
-        ///     }
-        /// 
-        /// </remarks>
-        /// <param name="registerDto">Registration information for the new user</param>
-        /// <returns>JWT token and user information for the newly registered user</returns>
-        /// <response code="201">Returns the JWT token and user details for the new account</response>
-        /// <response code="400">If the request data is invalid or validation fails</response>
-        /// <response code="409">If a user with the specified email already exists</response>
-        /// <response code="422">If the request contains validation errors</response>
-        [HttpPost("register")]
-        [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status409Conflict)]
-        [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-        public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterDto registerDto)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            var result = await _authService.RegisterAsync(registerDto);
-            if (result == null)
-            {
-                return Conflict("User with this email already exists.");
-            }
-
-            return CreatedAtAction(nameof(GetCurrentUser), null, result);
-        }        /// <summary>
         /// Changes the password for the currently authenticated user
         /// </summary>
         /// <remarks>

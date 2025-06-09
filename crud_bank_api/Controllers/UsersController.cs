@@ -18,7 +18,6 @@ namespace crud_bank_api.Controllers
     [ApiVersion("1.0")]
     [ApiVersion("2.0")]
     [Route("v{version:apiVersion}/[controller]")]
-    [Authorize] // Require authentication for all endpoints
     [Produces("application/json")]
     [Consumes("application/json")]
     public class UsersController : ControllerBase
@@ -55,6 +54,7 @@ namespace crud_bank_api.Controllers
         /// <response code="401">If the user is not authenticated</response>
         /// <response code="500">If an internal server error occurs</response>
         [HttpGet]
+        [Authorize]
         [ProducesResponseType(typeof(IEnumerable<UserResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -84,6 +84,7 @@ namespace crud_bank_api.Controllers
         /// <response code="403">If the user attempts to access another user's details</response>
         /// <response code="404">If the user with the specified ID is not found</response>
         [HttpGet("{id}")]
+        [Authorize]
         [ProducesResponseType(typeof(UserResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -99,7 +100,7 @@ namespace crud_bank_api.Controllers
             
             if (currentUserId.Value != id)
             {
-                return Forbid("You can only access your own user details.");
+                return StatusCode(StatusCodes.Status403Forbidden, "You can only access your own user details.");
             }
 
             var user = await _userService.GetUserByIdAsync(id);
@@ -130,6 +131,7 @@ namespace crud_bank_api.Controllers
         /// <response code="401">If the user is not authenticated</response>
         /// <response code="404">If no user with the specified email is found</response>
         [HttpGet("by-email")]
+        [Authorize]
         [ProducesResponseType(typeof(UserResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -162,7 +164,6 @@ namespace crud_bank_api.Controllers
         /// Sample request:
         /// 
         ///     POST /v1/users
-        ///     Authorization: Bearer {token}
         ///     Content-Type: application/json
         ///     
         ///     {
@@ -178,15 +179,9 @@ namespace crud_bank_api.Controllers
         /// <returns>Details of the newly created user</returns>
         /// <response code="201">Returns the newly created user details</response>
         /// <response code="400">If the request data is invalid or validation fails</response>
-        /// <response code="401">If the user is not authenticated</response>
-        /// <response code="409">If a user with the specified email already exists</response>
-        /// <response code="422">If the request contains validation errors</response>
         [HttpPost]
         [ProducesResponseType(typeof(UserResponseDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status409Conflict)]
-        [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
         public async Task<ActionResult<UserResponseDto>> CreateUser([FromBody] CreateUserDto createUserDto)
         {
             // Validate model state
@@ -219,7 +214,7 @@ namespace crud_bank_api.Controllers
         /// 
         /// Sample request:
         /// 
-        ///     PUT /v1/users/123
+        ///     PATCH /v1/users/123
         ///     Authorization: Bearer {token}
         ///     Content-Type: application/json
         ///     
@@ -238,6 +233,7 @@ namespace crud_bank_api.Controllers
         /// <response code="404">If the user with the specified ID is not found</response>
         /// <response code="409">If the new email already exists for another user</response>
         [HttpPatch("{id}")]
+        [Authorize]
         [ProducesResponseType(typeof(UserResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -298,6 +294,7 @@ namespace crud_bank_api.Controllers
         /// <response code="401">If the user is not authenticated</response>
         /// <response code="404">If the user with the specified ID is not found</response>
         [HttpDelete("{id}")]
+        [Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -336,6 +333,7 @@ namespace crud_bank_api.Controllers
         /// <response code="401">If the user is not authenticated</response>
         /// <response code="404">If the user with the specified ID is not found</response>
         [HttpHead("{id}")]
+        [Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -364,6 +362,7 @@ namespace crud_bank_api.Controllers
         /// <response code="401">If the user is not authenticated</response>
         /// <response code="404">If the user with the specified ID is not found</response>
         [HttpGet("{id}/summary")]
+        [Authorize]
         [MapToApiVersion("2.0")]
         [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -410,6 +409,7 @@ namespace crud_bank_api.Controllers
         /// <returns>Paginated list of users with navigation metadata</returns>        /// <response code="200">Returns the paginated user list successfully</response>
         /// <response code="401">If the user is not authenticated</response>
         [HttpGet("paginated")]
+        [Authorize]
         [MapToApiVersion("2.0")]
         [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

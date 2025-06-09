@@ -53,51 +53,6 @@ namespace crud_bank_api.Services
             };
         }
 
-        public async Task<AuthResponseDto?> RegisterAsync(RegisterDto registerDto)
-        {
-            // Check if user already exists
-            if (await _userService.EmailExistsAsync(registerDto.Email))
-            {
-                return null;
-            }
-
-            // Create user DTO
-            var createUserDto = new CreateUserDto
-            {
-                FirstName = registerDto.FirstName,
-                LastName = registerDto.LastName,
-                Email = registerDto.Email,
-                Password = registerDto.Password,
-                PhoneNumber = registerDto.PhoneNumber,
-                InitialBalance = 0.00m
-            };
-
-            // Create user
-            var user = await _userService.CreateUserAsync(createUserDto);
-            if (user == null)
-            {
-                return null;
-            }
-
-            // Get the full user entity for token generation
-            var userEntity = await _userService.GetUserEntityByEmailAsync(registerDto.Email);
-            if (userEntity == null)
-            {
-                return null;
-            }
-
-            // Generate JWT token
-            var token = GenerateJwtToken(userEntity);
-            var expiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationInMinutes);
-
-            return new AuthResponseDto
-            {
-                Token = token,
-                ExpiresAt = expiresAt,
-                User = user
-            };
-        }
-
         public async Task<bool> ChangePasswordAsync(int userId, ChangePasswordDto changePasswordDto)
         {
             var userEntity = await _userService.GetUserEntityByIdAsync(userId);

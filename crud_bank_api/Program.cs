@@ -11,6 +11,7 @@ using crud_bank_api.Models;
 using crud_bank_api.Data;
 using crud_bank_api.Repositories;
 using crud_bank_api.Validators;
+using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,9 +35,19 @@ builder.Services.Configure<JwtSettings>(options =>
 // Add services to the container
 builder.Services.AddControllers();
 
-// Add Entity Framework and PostgreSQL
-builder.Services.AddDbContext<BankDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+// Add Entity Framework with conditional database provider
+if (builder.Environment.EnvironmentName == "Testing")
+{
+    // Use InMemory database for testing
+    builder.Services.AddDbContext<BankDbContext>(options =>
+        options.UseInMemoryDatabase("TestDatabase"));
+}
+else
+{
+    // Use PostgreSQL for development and production
+    builder.Services.AddDbContext<BankDbContext>(options =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+}
 
 // Add API versioning
 builder.Services.AddApiVersioning(options =>
@@ -116,7 +127,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Configure JWT Authentication
+// Add authentication and authorization
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -159,18 +170,33 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var logger = services.GetRequiredService<ILogger<Program>>();
-    try
+      try
     {
         logger.LogInformation("Starting database initialization...");
         var context = services.GetRequiredService<BankDbContext>();
         
-        // Apply any pending migrations
-        await context.Database.MigrateAsync();
-        logger.LogInformation("Database migrations applied successfully");
-        
-        // Seed the database
-        await DatabaseSeeder.SeedAsync(context);
-        logger.LogInformation("Database seeding completed successfully");
+        // Apply migrations only for relational databases (not InMemory)
+        if (context.Database.IsRelational())
+        {
+            await context.Database.MigrateAsync();
+            logger.LogInformation("Database migrations applied successfully");
+        }
+        else
+        {
+            // For InMemory databases, ensure the database is created
+            await context.Database.EnsureCreatedAsync();
+            logger.LogInformation("InMemory database created successfully");
+        }
+          // Seed the database (skip in testing environment)
+        if (!app.Environment.EnvironmentName.Equals("Testing", StringComparison.OrdinalIgnoreCase))
+        {
+            await DatabaseSeeder.SeedAsync(context);
+            logger.LogInformation("Database seeding completed successfully");
+        }
+        else
+        {
+            logger.LogInformation("Database seeding skipped for testing environment");
+        }
         
         logger.LogInformation("Database initialized successfully");
     }
@@ -198,8 +224,14 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Always use authentication and authorization middleware
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();
+
+// Make the implicit Program class accessible to tests
+public partial class Program { }
