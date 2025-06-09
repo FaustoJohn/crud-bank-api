@@ -9,6 +9,8 @@ using Microsoft.EntityFrameworkCore;
 using crud_bank_api.Services;
 using crud_bank_api.Models;
 using crud_bank_api.Data;
+using crud_bank_api.Repositories;
+using crud_bank_api.Validators;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -133,14 +135,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+// Register repositories
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+
 // Register application services
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-builder.Services.ConfigureHttpJsonOptions(options =>
-{
-    options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
-});
+// Register validators
+builder.Services.AddScoped<crud_bank_api.Validators.IValidator<CreateUserDto>, crud_bank_api.Validators.CreateUserValidator>();
+builder.Services.AddScoped<crud_bank_api.Validators.IValidator<(int, UpdateUserDto)>, crud_bank_api.Validators.UpdateUserValidator>();
+
+// Note: AppJsonSerializerContext configuration commented out for now
+// builder.Services.ConfigureHttpJsonOptions(options =>
+// {
+//     options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
+// });
 
 var app = builder.Build();
 
@@ -193,21 +203,3 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-
-public record Todo(int Id, string? Title, DateOnly? DueBy = null, bool IsComplete = false);
-
-[JsonSerializable(typeof(Todo[]))]
-[JsonSerializable(typeof(IEnumerable<crud_bank_api.Models.UserResponseDto>))]
-[JsonSerializable(typeof(List<crud_bank_api.Models.UserResponseDto>))]
-[JsonSerializable(typeof(crud_bank_api.Models.UserResponseDto[]))]
-[JsonSerializable(typeof(crud_bank_api.Models.UserResponseDto))]
-[JsonSerializable(typeof(crud_bank_api.Models.CreateUserDto))]
-[JsonSerializable(typeof(crud_bank_api.Models.UpdateUserDto))]
-[JsonSerializable(typeof(crud_bank_api.Models.LoginDto))]
-[JsonSerializable(typeof(crud_bank_api.Models.RegisterDto))]
-[JsonSerializable(typeof(crud_bank_api.Models.ChangePasswordDto))]
-[JsonSerializable(typeof(crud_bank_api.Models.AuthResponseDto))]
-internal partial class AppJsonSerializerContext : JsonSerializerContext
-{
-
-}

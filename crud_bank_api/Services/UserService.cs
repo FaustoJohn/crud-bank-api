@@ -1,65 +1,52 @@
 using crud_bank_api.Models;
-using crud_bank_api.Data;
-using Microsoft.EntityFrameworkCore;
+using crud_bank_api.Repositories;
 using BCrypt.Net;
 
 namespace crud_bank_api.Services
 {
     public class UserService : IUserService
     {
-        private readonly BankDbContext _context;
+        private readonly IUserRepository _userRepository;
 
-        public UserService(BankDbContext context)
+        public UserService(IUserRepository userRepository)
         {
-            _context = context;
+            _userRepository = userRepository;
         }
 
         public async Task<IEnumerable<UserResponseDto>> GetAllUsersAsync()
         {
-            var users = await _context.Users
-                .Where(u => u.IsActive)
-                .Select(u => MapUserToResponseDto(u))
-                .ToListAsync();
-            
-            return users;
+            var users = await _userRepository.GetAllActiveUsersAsync();
+            return users.Select(u => MapUserToResponseDto(u));
         }
 
         public async Task<UserResponseDto?> GetUserByIdAsync(int id)
         {
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Id == id && u.IsActive);
-            
+            var user = await _userRepository.GetActiveUserByIdAsync(id);
             return user != null ? MapUserToResponseDto(user) : null;
         }
 
         public async Task<UserResponseDto?> GetUserByEmailAsync(string email)
         {
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower() && u.IsActive);
-            
+            var user = await _userRepository.GetActiveUserByEmailAsync(email);
             return user != null ? MapUserToResponseDto(user) : null;
         }
 
         public async Task<User?> GetUserEntityByIdAsync(int id)
         {
-            return await _context.Users
-                .FirstOrDefaultAsync(u => u.Id == id && u.IsActive);
+            return await _userRepository.GetActiveUserByIdAsync(id);
         }
 
         public async Task<User?> GetUserEntityByEmailAsync(string email)
         {
-            return await _context.Users
-                .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower() && u.IsActive);
-        }
-
-        public async Task<UserResponseDto> CreateUserAsync(CreateUserDto createUserDto)
+            return await _userRepository.GetActiveUserByEmailAsync(email);
+        }        public async Task<UserResponseDto> CreateUserAsync(CreateUserDto createUserDto)
         {
             var user = new User
             {
                 FirstName = createUserDto.FirstName,
                 LastName = createUserDto.LastName,
                 Email = createUserDto.Email,
-                PasswordHash = !string.IsNullOrEmpty(createUserDto.Password) 
+                PasswordHash = !string.IsNullOrEmpty(createUserDto.Password)
                     ? BCrypt.Net.BCrypt.HashPassword(createUserDto.Password)
                     : BCrypt.Net.BCrypt.HashPassword("defaultpassword123"),
                 PhoneNumber = createUserDto.PhoneNumber,
@@ -69,15 +56,14 @@ namespace crud_bank_api.Services
                 IsActive = true
             };
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            var createdUser = await _userRepository.CreateUserAsync(user);
             
-            return MapUserToResponseDto(user);
+            return MapUserToResponseDto(createdUser);
         }
 
         public async Task<UserResponseDto?> UpdateUserAsync(int id, UpdateUserDto updateUserDto)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+            var user = await _userRepository.GetUserByIdAsync(id);
             if (user == null)
                 return null;
 
@@ -98,49 +84,30 @@ namespace crud_bank_api.Services
 
             user.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            var updatedUser = await _userRepository.UpdateUserAsync(user);
             
-            return MapUserToResponseDto(user);
+            return updatedUser != null ? MapUserToResponseDto(updatedUser) : null;
         }
 
         public async Task<bool> UpdateUserPasswordAsync(int id, string newPassword)
         {
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Id == id && u.IsActive);
-            
-            if (user == null)
-                return false;
-
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
-            user.UpdatedAt = DateTime.UtcNow;
-            
-            await _context.SaveChangesAsync();
-            return true;
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            return await _userRepository.UpdateUserPasswordAsync(id, passwordHash);
         }
 
         public async Task<bool> DeleteUserAsync(int id)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
-            if (user == null)
-                return false;
-
-            user.IsActive = false;
-            user.UpdatedAt = DateTime.UtcNow;
-            
-            await _context.SaveChangesAsync();
-            return true;
+            return await _userRepository.DeleteUserAsync(id);
         }
 
         public async Task<bool> UserExistsAsync(int id)
         {
-            return await _context.Users
-                .AnyAsync(u => u.Id == id && u.IsActive);
+            return await _userRepository.UserExistsAsync(id);
         }
 
         public async Task<bool> EmailExistsAsync(string email)
         {
-            return await _context.Users
-                .AnyAsync(u => u.Email.ToLower() == email.ToLower() && u.IsActive);
+            return await _userRepository.EmailExistsAsync(email);
         }
 
         private static UserResponseDto MapUserToResponseDto(User user)
@@ -170,8 +137,7 @@ namespace crud_bank_api.Services
             {
                 var random = new Random();
                 accountNumber = $"ACC{random.Next(100000, 999999)}";
-                exists = await _context.Users
-                    .AnyAsync(u => u.AccountNumber == accountNumber);
+                exists = await _userRepository.AccountNumberExistsAsync(accountNumber);
             }
             while (exists);
             

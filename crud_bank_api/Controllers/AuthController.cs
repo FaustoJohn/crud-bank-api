@@ -41,15 +41,33 @@ namespace crud_bank_api.Controllers
         ///         "password": "SecurePassword123!"
         ///     }
         /// 
+        /// Sample successful response:
+        /// 
+        ///     {
+        ///         "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        ///         "expiresAt": "2025-06-09T15:30:00Z",
+        ///         "user": {
+        ///             "id": 1,
+        ///             "firstName": "John",
+        ///             "lastName": "Doe",
+        ///             "email": "john.doe@example.com",
+        ///             "accountNumber": "ACC123456",
+        ///             "balance": 1000.00
+        ///         }
+        ///     }
+        /// 
         /// </remarks>
         /// <param name="loginDto">Login credentials containing email and password</param>
-        /// <returns>JWT token and user information upon successful authentication</returns>        /// <response code="200">Returns the JWT token and user details successfully</response>
+        /// <returns>JWT token and user information upon successful authentication</returns>
+        /// <response code="200">Returns the JWT token and user details successfully</response>
         /// <response code="400">If the request data is invalid or missing required fields</response>
         /// <response code="401">If the email or password is incorrect</response>
+        /// <response code="422">If the request contains validation errors</response>
         [HttpPost("login")]
         [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
         public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto loginDto)
         {
             if (!ModelState.IsValid)
@@ -87,13 +105,16 @@ namespace crud_bank_api.Controllers
         /// 
         /// </remarks>
         /// <param name="registerDto">Registration information for the new user</param>
-        /// <returns>JWT token and user information for the newly registered user</returns>        /// <response code="201">Returns the JWT token and user details for the new account</response>
+        /// <returns>JWT token and user information for the newly registered user</returns>
+        /// <response code="201">Returns the JWT token and user details for the new account</response>
         /// <response code="400">If the request data is invalid or validation fails</response>
         /// <response code="409">If a user with the specified email already exists</response>
+        /// <response code="422">If the request contains validation errors</response>
         [HttpPost("register")]
         [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
         public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterDto registerDto)
         {
             if (!ModelState.IsValid)

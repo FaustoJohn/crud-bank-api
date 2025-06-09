@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using crud_bank_api.Models;
 using crud_bank_api.Services;
+using crud_bank_api.Validators;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
@@ -23,11 +24,20 @@ namespace crud_bank_api.Controllers
     public class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IValidator<CreateUserDto> _createUserValidator;
+        private readonly IValidator<(int, UpdateUserDto)> _updateUserValidator;
 
-        public UsersController(IUserService userService)
+        public UsersController(
+            IUserService userService,
+            IValidator<CreateUserDto> createUserValidator,
+            IValidator<(int, UpdateUserDto)> updateUserValidator)
         {
             _userService = userService;
-        }        /// <summary>
+            _createUserValidator = createUserValidator;
+            _updateUserValidator = updateUserValidator;
+        }
+
+        /// <summary>
         /// Retrieves all active users in the system
         /// </summary>
         /// <remarks>
@@ -40,16 +50,21 @@ namespace crud_bank_api.Controllers
         ///     Authorization: Bearer {token}
         /// 
         /// </remarks>
-        /// <returns>A list of all active users</returns>        /// <response code="200">Returns the list of users successfully</response>
+        /// <returns>A list of all active users</returns>
+        /// <response code="200">Returns the list of users successfully</response>
         /// <response code="401">If the user is not authenticated</response>
+        /// <response code="500">If an internal server error occurs</response>
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<UserResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetUsers()
         {
             var users = await _userService.GetAllUsersAsync();
             return Ok(users);
-        }        /// <summary>
+        }
+
+        /// <summary>
         /// Retrieves a specific user by their unique identifier
         /// </summary>
         /// <remarks>
@@ -94,7 +109,9 @@ namespace crud_bank_api.Controllers
             }
 
             return Ok(user);
-        }/// <summary>
+        }
+
+        /// <summary>
         /// Retrieves a user by their email address
         /// </summary>
         /// <remarks>
@@ -119,9 +136,10 @@ namespace crud_bank_api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<UserResponseDto>> GetUserByEmail([FromQuery] string email)
         {
-            if (string.IsNullOrWhiteSpace(email))
+            var validationResult = ParameterValidator.ValidateEmailParameter(email);
+            if (!validationResult.IsValid)
             {
-                return BadRequest("Email parameter is required.");
+                return BadRequest(validationResult.Errors.First());
             }
 
             var user = await _userService.GetUserByEmailAsync(email);
@@ -131,7 +149,9 @@ namespace crud_bank_api.Controllers
             }
 
             return Ok(user);
-        }        /// <summary>
+        }
+
+        /// <summary>
         /// Creates a new user account in the system
         /// </summary>
         /// <remarks>
@@ -155,82 +175,41 @@ namespace crud_bank_api.Controllers
         /// 
         /// </remarks>
         /// <param name="createUserDto">The user creation data containing all required information</param>
-        /// <returns>Details of the newly created user</returns>        /// <response code="201">Returns the newly created user details</response>
+        /// <returns>Details of the newly created user</returns>
+        /// <response code="201">Returns the newly created user details</response>
         /// <response code="400">If the request data is invalid or validation fails</response>
         /// <response code="401">If the user is not authenticated</response>
         /// <response code="409">If a user with the specified email already exists</response>
+        /// <response code="422">If the request contains validation errors</response>
         [HttpPost]
         [ProducesResponseType(typeof(UserResponseDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
         public async Task<ActionResult<UserResponseDto>> CreateUser([FromBody] CreateUserDto createUserDto)
         {
-            // Check if the request body is null
-            if (createUserDto == null)
-            {
-                return BadRequest("Request body cannot be null.");
-            }
-
             // Validate model state
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            // Additional validation
-            var validationErrors = new List<string>();
-
-            // Validate required fields explicitly
-            if (string.IsNullOrWhiteSpace(createUserDto.FirstName))
-            {
-                validationErrors.Add("FirstName is required and cannot be empty.");
-            }
-
-            if (string.IsNullOrWhiteSpace(createUserDto.LastName))
-            {
-                validationErrors.Add("LastName is required and cannot be empty.");
-            }
-
-            if (string.IsNullOrWhiteSpace(createUserDto.Email))
-            {
-                validationErrors.Add("Email is required and cannot be empty.");
-            }
-            else if (!IsValidEmail(createUserDto.Email))
-            {
-                validationErrors.Add("Email format is invalid.");
-            }
-
-            // Validate initial balance
-            if (createUserDto.InitialBalance < 0)
-            {
-                validationErrors.Add("Initial balance cannot be negative.");
-            }
-
-            // Validate phone number if provided
-            if (!string.IsNullOrWhiteSpace(createUserDto.PhoneNumber) && !IsValidPhoneNumber(createUserDto.PhoneNumber))
-            {
-                validationErrors.Add("Phone number format is invalid.");
-            }
-
-            // Return validation errors if any
-            if (validationErrors.Any())
+            // Use validator for comprehensive validation
+            var validationResult = await _createUserValidator.ValidateAsync(createUserDto);
+            if (!validationResult.IsValid)
             {
                 return BadRequest(new { 
                     message = "Validation failed",
-                    errors = validationErrors 
+                    errors = validationResult.Errors 
                 });
-            }
-
-            // Check if email already exists
-            if (await _userService.EmailExistsAsync(createUserDto.Email))
-            {
-                return Conflict($"User with email {createUserDto.Email} already exists.");
             }
 
             var user = await _userService.CreateUserAsync(createUserDto);
             return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
-        }        /// <summary>
+        }
+
+        /// <summary>
         /// Updates an existing user's information
         /// </summary>
         /// <remarks>
@@ -258,7 +237,7 @@ namespace crud_bank_api.Controllers
         /// <response code="401">If the user is not authenticated</response>
         /// <response code="404">If the user with the specified ID is not found</response>
         /// <response code="409">If the new email already exists for another user</response>
-        [HttpPut("{id}")]
+        [HttpPatch("{id}")]
         [ProducesResponseType(typeof(UserResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -271,20 +250,24 @@ namespace crud_bank_api.Controllers
                 return BadRequest(ModelState);
             }
 
-            // Check if user exists
-            if (!await _userService.UserExistsAsync(id))
+            // Use validator for comprehensive validation
+            var validationResult = await _updateUserValidator.ValidateAsync((id, updateUserDto));
+            if (!validationResult.IsValid)
             {
-                return NotFound($"User with ID {id} not found.");
-            }
-
-            // Check if email is being updated and already exists
-            if (!string.IsNullOrWhiteSpace(updateUserDto.Email))
-            {
-                var existingUser = await _userService.GetUserByEmailAsync(updateUserDto.Email);
-                if (existingUser != null && existingUser.Id != id)
+                // Check if the error is about user not found (404) or email conflict (409)
+                if (validationResult.Errors.Any(e => e.Contains("not found")))
                 {
-                    return Conflict($"User with email {updateUserDto.Email} already exists.");
+                    return NotFound(validationResult.Errors.First(e => e.Contains("not found")));
                 }
+                if (validationResult.Errors.Any(e => e.Contains("already exists")))
+                {
+                    return Conflict(validationResult.Errors.First(e => e.Contains("already exists")));
+                }
+                
+                return BadRequest(new { 
+                    message = "Validation failed",
+                    errors = validationResult.Errors 
+                });
             }
 
             var updatedUser = await _userService.UpdateUserAsync(id, updateUserDto);
@@ -294,7 +277,9 @@ namespace crud_bank_api.Controllers
             }
 
             return Ok(updatedUser);
-        }        /// <summary>
+        }
+
+        /// <summary>
         /// Soft deletes a user (marks as inactive rather than permanent deletion)
         /// </summary>
         /// <remarks>
@@ -330,7 +315,9 @@ namespace crud_bank_api.Controllers
             }
 
             return NoContent();
-        }        /// <summary>
+        }
+
+        /// <summary>
         /// Checks if a user exists in the system
         /// </summary>
         /// <remarks>
@@ -356,7 +343,9 @@ namespace crud_bank_api.Controllers
         {
             var exists = await _userService.UserExistsAsync(id);
             return exists ? Ok() : NotFound();
-        }        /// <summary>
+        }
+
+        /// <summary>
         /// Retrieves enhanced user summary with additional metadata (API Version 2.0 only)
         /// </summary>
         /// <remarks>
@@ -400,7 +389,9 @@ namespace crud_bank_api.Controllers
             };
 
             return Ok(summary);
-        }        /// <summary>
+        }
+
+        /// <summary>
         /// Retrieves users with pagination support (API Version 2.0 only)
         /// </summary>
         /// <remarks>
@@ -424,63 +415,32 @@ namespace crud_bank_api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<object>> GetUsersPaginated([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            if (page < 1) page = 1;
-            if (pageSize < 1 || pageSize > 100) pageSize = 10;
-
+            var (validationResult, normalizedPage, normalizedPageSize) = ParameterValidator.ValidatePaginationParameters(page, pageSize);
+            
             var allUsers = await _userService.GetAllUsersAsync();
             var totalUsers = allUsers.Count();
-            var totalPages = (int)Math.Ceiling(totalUsers / (double)pageSize);
+            var totalPages = (int)Math.Ceiling(totalUsers / (double)normalizedPageSize);
             
             var pagedUsers = allUsers
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize);
+                .Skip((normalizedPage - 1) * normalizedPageSize)
+                .Take(normalizedPageSize);
 
             var result = new
             {
                 Data = pagedUsers,
                 Pagination = new
                 {
-                    CurrentPage = page,
-                    PageSize = pageSize,
+                    CurrentPage = normalizedPage,
+                    PageSize = normalizedPageSize,
                     TotalPages = totalPages,
                     TotalUsers = totalUsers,
-                    HasNextPage = page < totalPages,
-                    HasPreviousPage = page > 1
+                    HasNextPage = normalizedPage < totalPages,
+                    HasPreviousPage = normalizedPage > 1
                 },
                 ApiVersion = "2.0"
             };
 
             return Ok(result);
-        }
-
-        /// <summary>
-        /// Validates email format
-        /// </summary>
-        /// <param name="email">Email to validate</param>
-        /// <returns>True if valid, false otherwise</returns>
-        private static bool IsValidEmail(string email)
-        {
-            try
-            {
-                var addr = new System.Net.Mail.MailAddress(email);
-                return addr.Address == email;
-            }
-            catch
-            {
-                return false;
-            }
-        }        /// <summary>
-        /// Validates phone number format
-        /// </summary>
-        /// <param name="phoneNumber">Phone number to validate</param>
-        /// <returns>True if valid, false otherwise</returns>
-        private static bool IsValidPhoneNumber(string phoneNumber)
-        {
-            // Remove common phone number formatting characters
-            var cleaned = phoneNumber.Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "").Replace("+", "");
-            
-            // Check if it contains only digits and has reasonable length (7-15 digits)
-            return cleaned.All(char.IsDigit) && cleaned.Length >= 7 && cleaned.Length <= 15;
         }
 
         /// <summary>
